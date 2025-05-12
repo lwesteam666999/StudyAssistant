@@ -31,4 +31,4 @@ public class StateManager {
     public boolean isIdle() {
         return currentState == LearningState.IDLE;
     }
-}
+} 

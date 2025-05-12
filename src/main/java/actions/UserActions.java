@@ -20,42 +20,28 @@ public class UserActions {
     }
 
     private void bindActions() {
-        JButton startButton = mainWindow.getStartButton();
-        JButton pauseButton = mainWindow.getPauseButton();
-        JButton exitButton = mainWindow.getExitButton();
-
-        startButton.addActionListener(startAction());
-        pauseButton.addActionListener(pauseAction());
-        exitButton.addActionListener(exitAction());
-    }
-
-    private ActionListener startAction() {
-        return e -> {
+        mainWindow.getStartButton().addActionListener(e -> {
             if (!stateManager.isStudying()) {
                 timerService.start();
             }
-        };
-    }
-
-    private ActionListener pauseAction() {
-        return e -> {
+        });
+        
+        mainWindow.getPauseButton().addActionListener(e -> {
             if (stateManager.isStudying()) {
                 timerService.pause();
             } else if (stateManager.isPaused()) {
                 timerService.start();
             }
-        };
-    }
-
-    private ActionListener exitAction() {
-        return e -> {
+        });
+        
+        mainWindow.getExitButton().addActionListener(e -> {
             int result = JOptionPane.showConfirmDialog(null,
-                    "确定要优雅退出吗？", "退出确认",
+                    "确定要退出吗？", "退出确认",
                     JOptionPane.YES_NO_OPTION);
             if (result == JOptionPane.YES_OPTION) {
                 timerService.stop();
                 System.exit(0);
             }
-        };
+        });
     }
 }
