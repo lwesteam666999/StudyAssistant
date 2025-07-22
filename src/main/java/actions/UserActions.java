@@ -4,8 +4,7 @@ import core.StateManager;
 import core.TimerService;
 import ui.MainWindow;
 
-import javax.swing.*;
-import java.awt.event.ActionListener;
+
 
 public class UserActions {
     private final MainWindow mainWindow;
@@ -35,13 +34,7 @@ public class UserActions {
         });
         
         mainWindow.getExitButton().addActionListener(e -> {
-            int result = JOptionPane.showConfirmDialog(null,
-                    "确定要退出吗？", "退出确认",
-                    JOptionPane.YES_NO_OPTION);
-            if (result == JOptionPane.YES_OPTION) {
-                timerService.stop();
-                System.exit(0);
-            }
+            mainWindow.handleExit();
         });
     }
 }

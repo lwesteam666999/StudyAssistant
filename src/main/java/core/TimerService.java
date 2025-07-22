@@ -24,11 +24,12 @@ public class TimerService {
     // 提示音周期（秒）
     private final int REMINDER_CYCLE = 300; // 5分钟
 
-    // 测试模式
+    // 测试模式 - 更人性化的参数设置
     private boolean testMode = false;
-    private final int TEST_REMINDER_SECONDS = 5; // 测试模式下5秒就触发提示音
-    private final int TEST_SHORT_BREAK = 5; // 测试模式下短休息5秒
-    private final int TEST_CYCLE_SECONDS = 15; // 测试模式下15秒一个周期
+    private final int TEST_CYCLE_SECONDS = 60; // 测试模式下60秒一个小周期（相当于正常模式的5分钟）
+    private final int TEST_SHORT_BREAK = 10; // 测试模式下短休息10秒
+    private final int TEST_LONG_BREAK = 30; // 测试模式下长休息30秒
+    private final int TEST_TOTAL_CYCLES = 3; // 测试模式下3个小周期后进入长休息（相当于正常模式的18个周期）
 
     public TimerService(StateManager stateManager, MainWindow mainWindow) {
         this.stateManager = stateManager;
@@ -73,24 +74,38 @@ public class TimerService {
         updateProgressBar();
 
         // 检查是否完成学习周期
-        if ((testMode && elapsedSeconds >= TEST_CYCLE_SECONDS) || 
-            (!testMode && elapsedSeconds >= CYCLE_SECONDS)) {
-            invokeLongBreak();
-            nextReminderTime = -1; // 重置提示音时间
-            return;
-        } 
+        if (testMode) {
+            // 测试模式：3个小周期后进入长休息
+            if (elapsedSeconds >= TEST_CYCLE_SECONDS * TEST_TOTAL_CYCLES) {
+                invokeLongBreak();
+                nextReminderTime = -1; // 重置提示音时间
+                return;
+            }
+        } else {
+            // 正常模式：90分钟后进入长休息
+            if (elapsedSeconds >= CYCLE_SECONDS) {
+                invokeLongBreak();
+                nextReminderTime = -1; // 重置提示音时间
+                return;
+            }
+        }
         
         handleReminders();
     }
     
     private void handleReminders() {
         if (testMode) {
-            // 测试模式下的逻辑
-            if (nextReminderTime == -1) {
-                nextReminderTime = elapsedSeconds + TEST_REMINDER_SECONDS;
-                System.out.println("测试模式：下一次提示音将在 " + nextReminderTime + " 秒触发");
+            // 测试模式下的逻辑：每60秒周期中，在30-45秒之间随机触发提示音
+            int currentCycle = elapsedSeconds / TEST_CYCLE_SECONDS;
+            int secondsInCurrentCycle = elapsedSeconds % TEST_CYCLE_SECONDS;
+
+            // 只在新周期开始时或未设置提示时间时才设置新的提示音时间
+            if (secondsInCurrentCycle == 0 || nextReminderTime == -1) {
+                // 在每个60秒周期的30-45秒之间随机触发（相当于正常模式的3-5分钟比例）
+                nextReminderTime = currentCycle * TEST_CYCLE_SECONDS + 30 + random.nextInt(16);
+                System.out.println("测试模式：下一次提示音将在 " + nextReminderTime + " 秒触发（测试周期" + (currentCycle + 1) + "）");
             }
-            
+
             // 到达提示时间，播放提示音并进入短休息状态
             if (elapsedSeconds == nextReminderTime) {
                 System.out.println("测试模式：提示音触发于 " + elapsedSeconds + " 秒");
@@ -99,23 +114,23 @@ public class TimerService {
             }
         } else {
             // 正常模式下的逻辑
-        // 每五分钟的学习周期
-        int currentCycle = elapsedSeconds / REMINDER_CYCLE;
-        int secondsInCurrentCycle = elapsedSeconds % REMINDER_CYCLE;
-        
-        // 如果是新的周期的开始，或未设置下一次提示时间，设置在第三至第四分钟之间的随机时间点
-        if (secondsInCurrentCycle == 0 || nextReminderTime == -1) {
-            // 第三分钟到第四分钟之间随机（180-300秒）
-            nextReminderTime = currentCycle * REMINDER_CYCLE + 180 + random.nextInt(120);
-            System.out.println("下一次提示音将在 " + nextReminderTime + " 秒触发");
-        }
-        
+            // 每五分钟的学习周期
+            int currentCycle = elapsedSeconds / REMINDER_CYCLE;
+            int secondsInCurrentCycle = elapsedSeconds % REMINDER_CYCLE;
+
+            // 只在新周期开始时或未设置提示时间时才设置新的提示音时间
+            if (secondsInCurrentCycle == 0 || nextReminderTime == -1) {
+                // 第三分钟到第五分钟之间随机（180-300秒）
+                nextReminderTime = currentCycle * REMINDER_CYCLE + 180 + random.nextInt(121);
+                System.out.println("下一次提示音将在 " + nextReminderTime + " 秒触发（周期" + (currentCycle + 1) + "）");
+            }
+
             // 到达提示时间，播放提示音并进入短休息状态
-        if (elapsedSeconds == nextReminderTime) {
-            System.out.println("提示音触发于 " + elapsedSeconds + " 秒");
+            if (elapsedSeconds == nextReminderTime) {
+                System.out.println("提示音触发于 " + elapsedSeconds + " 秒");
                 invokeShortBreak(false); // 正常模式短休息
-            nextReminderTime = -1; // 重置提示时间，等待下一个周期
-        }
+                nextReminderTime = -1; // 重置提示时间，等待下一个周期
+            }
         }
     }
 
@@ -136,10 +151,10 @@ public class TimerService {
     private void invokeLongBreak() {
         // 更新状态
         stateManager.setState(LearningState.BREAK);
-        
-        int breakDuration = testMode ? TEST_SHORT_BREAK : longBreakSeconds;
+
+        int breakDuration = testMode ? TEST_LONG_BREAK : longBreakSeconds;
         String durationText = testMode ? breakDuration + " 秒" : (breakDuration / 60) + " 分钟";
-        
+
         // 播放声音并显示弹窗
         SwingUtilities.invokeLater(() -> {
             // 首先触发声音播放
@@ -228,13 +243,16 @@ public class TimerService {
             JProgressBar bar = mainWindow.getProgressBar();
             if (bar != null) {
                 // 设置为学习状态的进度条范围
-                int cycleSeconds = testMode ? TEST_CYCLE_SECONDS : CYCLE_SECONDS;
-                bar.setMaximum(cycleSeconds);
+                int totalSeconds = testMode ? (TEST_CYCLE_SECONDS * TEST_TOTAL_CYCLES) : CYCLE_SECONDS;
+                bar.setMaximum(totalSeconds);
                 bar.setValue(elapsedSeconds);
-                
-                int remaining = cycleSeconds - elapsedSeconds;
-                bar.setString(String.format("学习剩余：%02d:%02d", remaining / 60, remaining % 60));
-                
+
+                int remaining = totalSeconds - elapsedSeconds;
+                String timeText = testMode ?
+                    String.format("测试剩余：%02d:%02d", remaining / 60, remaining % 60) :
+                    String.format("学习剩余：%02d:%02d", remaining / 60, remaining % 60);
+                bar.setString(timeText);
+
                 // 设置为绿色表示学习状态
                 bar.setForeground(new Color(46, 204, 113));
             }
@@ -246,14 +264,31 @@ public class TimerService {
 
     public void setTestMode(boolean enabled) {
         this.testMode = enabled;
-        // 如果启用测试模式，立即重置下一次提示音时间
+
+        // 如果当前正在学习或暂停状态，需要停止计时器并重置状态
+        if (stateManager.isStudying() || stateManager.isPaused()) {
+            // 停止当前的计时任务
+            if (scheduledTask != null) {
+                scheduledTask.cancel(false);
+                scheduledTask = null;
+            }
+
+            // 重置状态为空闲
+            stateManager.setState(LearningState.IDLE);
+            System.out.println("模式切换：已停止当前学习任务，请重新点击开始学习");
+        }
+
+        // 重置计时相关变量
+        elapsedSeconds = 0;
+        nextReminderTime = -1;
+
+        // 更新进度条显示
+        updateProgressBar();
+
         if (enabled) {
-            nextReminderTime = elapsedSeconds + TEST_REMINDER_SECONDS;
-            System.out.println("测试模式已启用，" + TEST_REMINDER_SECONDS + "秒后触发提示音");
+            System.out.println("测试模式已启用：60秒周期，30-45秒随机提示音，10秒短休息，3周期后30秒长休息");
         } else {
-            // 恢复正常模式，重新计算下一次提示音时间
-            nextReminderTime = -1;
-            System.out.println("测试模式已禁用，恢复正常模式");
+            System.out.println("测试模式已禁用，恢复正常模式：5分钟周期，3-5分钟随机提示音");
         }
     }
 
