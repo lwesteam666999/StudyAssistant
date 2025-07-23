@@ -103,7 +103,7 @@ public class TimerService {
             int secondsInCurrentCycle = elapsedSeconds % TEST_CYCLE_SECONDS;
 
             // 只在新周期开始时且该周期未触发过提示音时才设置新的提示音时间
-            if (secondsInCurrentCycle == 0 && currentCycle != lastTriggeredCycle) {
+            if ((secondsInCurrentCycle == 0 || nextReminderTime == -1) && currentCycle != lastTriggeredCycle) {
                 // 在每个60秒周期的30-45秒之间随机触发（相当于正常模式的3-5分钟比例）
                 nextReminderTime = currentCycle * TEST_CYCLE_SECONDS + 30 + random.nextInt(16);
                 System.out.println("测试模式：下一次提示音将在 " + nextReminderTime + " 秒触发（测试周期" + (currentCycle + 1) + "）");
@@ -123,7 +123,7 @@ public class TimerService {
             int secondsInCurrentCycle = elapsedSeconds % REMINDER_CYCLE;
 
             // 只在新周期开始时且该周期未触发过提示音时才设置新的提示音时间
-            if (secondsInCurrentCycle == 0 && currentCycle != lastTriggeredCycle) {
+            if ((secondsInCurrentCycle == 0 || nextReminderTime == -1) && currentCycle != lastTriggeredCycle) {
                 // 第三分钟到第五分钟之间随机（180-300秒）
                 nextReminderTime = currentCycle * REMINDER_CYCLE + 180 + random.nextInt(121);
                 System.out.println("下一次提示音将在 " + nextReminderTime + " 秒触发（周期" + (currentCycle + 1) + "）");
