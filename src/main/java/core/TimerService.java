@@ -15,6 +15,7 @@ public class TimerService {
     private int elapsedSeconds = 0;
     private final Random random = new Random();
     private int nextReminderTime = -1;
+    private int lastTriggeredCycle = -1; // 记录上次触发提示音的周期
     
     // 休息时间配置（秒）
     private int shortBreakSeconds = 20;
@@ -79,6 +80,7 @@ public class TimerService {
             if (elapsedSeconds >= TEST_CYCLE_SECONDS * TEST_TOTAL_CYCLES) {
                 invokeLongBreak();
                 nextReminderTime = -1; // 重置提示音时间
+                lastTriggeredCycle = -1; // 重置触发周期记录
                 return;
             }
         } else {
@@ -86,6 +88,7 @@ public class TimerService {
             if (elapsedSeconds >= CYCLE_SECONDS) {
                 invokeLongBreak();
                 nextReminderTime = -1; // 重置提示音时间
+                lastTriggeredCycle = -1; // 重置触发周期记录
                 return;
             }
         }
@@ -99,16 +102,17 @@ public class TimerService {
             int currentCycle = elapsedSeconds / TEST_CYCLE_SECONDS;
             int secondsInCurrentCycle = elapsedSeconds % TEST_CYCLE_SECONDS;
 
-            // 只在新周期开始时或未设置提示时间时才设置新的提示音时间
-            if (secondsInCurrentCycle == 0 || nextReminderTime == -1) {
+            // 只在新周期开始时且该周期未触发过提示音时才设置新的提示音时间
+            if (secondsInCurrentCycle == 0 && currentCycle != lastTriggeredCycle) {
                 // 在每个60秒周期的30-45秒之间随机触发（相当于正常模式的3-5分钟比例）
                 nextReminderTime = currentCycle * TEST_CYCLE_SECONDS + 30 + random.nextInt(16);
                 System.out.println("测试模式：下一次提示音将在 " + nextReminderTime + " 秒触发（测试周期" + (currentCycle + 1) + "）");
             }
 
             // 到达提示时间，播放提示音并进入短休息状态
-            if (elapsedSeconds == nextReminderTime) {
+            if (elapsedSeconds == nextReminderTime && currentCycle != lastTriggeredCycle) {
                 System.out.println("测试模式：提示音触发于 " + elapsedSeconds + " 秒");
+                lastTriggeredCycle = currentCycle; // 记录已触发的周期
                 invokeShortBreak(true); // 使用测试模式短休息
                 nextReminderTime = -1; // 重置提示时间
             }
@@ -118,16 +122,17 @@ public class TimerService {
             int currentCycle = elapsedSeconds / REMINDER_CYCLE;
             int secondsInCurrentCycle = elapsedSeconds % REMINDER_CYCLE;
 
-            // 只在新周期开始时或未设置提示时间时才设置新的提示音时间
-            if (secondsInCurrentCycle == 0 || nextReminderTime == -1) {
+            // 只在新周期开始时且该周期未触发过提示音时才设置新的提示音时间
+            if (secondsInCurrentCycle == 0 && currentCycle != lastTriggeredCycle) {
                 // 第三分钟到第五分钟之间随机（180-300秒）
                 nextReminderTime = currentCycle * REMINDER_CYCLE + 180 + random.nextInt(121);
                 System.out.println("下一次提示音将在 " + nextReminderTime + " 秒触发（周期" + (currentCycle + 1) + "）");
             }
 
             // 到达提示时间，播放提示音并进入短休息状态
-            if (elapsedSeconds == nextReminderTime) {
+            if (elapsedSeconds == nextReminderTime && currentCycle != lastTriggeredCycle) {
                 System.out.println("提示音触发于 " + elapsedSeconds + " 秒");
+                lastTriggeredCycle = currentCycle; // 记录已触发的周期
                 invokeShortBreak(false); // 正常模式短休息
                 nextReminderTime = -1; // 重置提示时间，等待下一个周期
             }
@@ -281,6 +286,7 @@ public class TimerService {
         // 重置计时相关变量
         elapsedSeconds = 0;
         nextReminderTime = -1;
+        lastTriggeredCycle = -1;
 
         // 更新进度条显示
         updateProgressBar();
